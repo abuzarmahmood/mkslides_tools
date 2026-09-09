@@ -14,6 +14,7 @@ def build_mkslides_config(
     *,
     separator_vertical: str = DEFAULT_SEPARATOR_VERTICAL,
     extra_css: list[str] | None = None,
+    extra_javascript: list[str] | None = None,
 ) -> str:
     """Render an mkslides.yml YAML string.
 
@@ -26,12 +27,13 @@ def build_mkslides_config(
       swallows the resulting parse error and falls back to defaults with no
       warning -- pass -f explicitly when calling `mkslides build`, see
       build_deck.build_slide_deck).
-    - extra_css filenames (paths relative to the slides source dir, e.g.
-      "custom.css") must be emitted nested under `plugins:` as
-      `plugins: - extra_css: [...]`, NOT as a top-level `extra_css:` key --
-      mkslides/config.py's Plugin dataclass only reads extra_css/
-      extra_javascript from entries under `plugins`; a top-level `extra_css:`
-      key raises ConfigKeyError.
+    - extra_css/extra_javascript filenames (paths relative to the slides
+      source dir, e.g. "custom.css") must be emitted nested under
+      `plugins:` as ONE list entry with both as sibling keys
+      (`plugins: - extra_css: [...] extra_javascript: [...]`), NOT as
+      top-level keys and NOT as separate list items -- mkslides/config.py's
+      Plugin dataclass only reads extra_css/extra_javascript from entries
+      under `plugins`; a top-level `extra_css:` key raises ConfigKeyError.
     """
     lines = [
         "revealjs:",
@@ -41,7 +43,14 @@ def build_mkslides_config(
         "slides:",
         f"  separator_vertical: '{separator_vertical}'",
     ]
-    if extra_css:
-        lines += ["", "plugins:", "  - extra_css:"]
-        lines += [f"      - {css}" for css in extra_css]
+    if extra_css or extra_javascript:
+        plugin_lines = []
+        if extra_css:
+            plugin_lines.append("extra_css:")
+            plugin_lines += [f"  - {css}" for css in extra_css]
+        if extra_javascript:
+            plugin_lines.append("extra_javascript:")
+            plugin_lines += [f"  - {js}" for js in extra_javascript]
+        lines += ["", "plugins:", f"  - {plugin_lines[0]}"]
+        lines += [f"    {line}" for line in plugin_lines[1:]]
     return "\n".join(lines) + "\n"

@@ -30,11 +30,12 @@ This is a **plain scripts/library folder, not an installable package** — no
 | `inline_html.py` | Bundle a built mkslides site (`index.html` + local `<link>`/`<script>`/`<img>`/`<video>` refs) into one self-contained HTML file. Also runnable standalone: `python inline_html.py in.html out.html`. |
 | `slugify.py` | `make_valid_identifier()` (arbitrary string -> MATLAB/Python-identifier-safe id) and `slugify()` (identifier -> HTML-id-safe slide anchor). |
 | `mkslides_bin.py` | `resolve_mkslides_bin()` — find the mkslides executable to invoke (explicit arg > `$MKSLIDES_TOOLS_BIN` > `PATH` > a documented conda-env fallback). |
-| `mkslides_config.py` | `build_mkslides_config()` — render an `mkslides.yml` string (canvas size, `-v-` vertical-slide separator, optional `extra_css`). |
+| `mkslides_config.py` | `build_mkslides_config()` — render an `mkslides.yml` string (canvas size, `-v-` vertical-slide separator, optional `extra_css`/`extra_javascript`). |
 | `markdown_deck.py` | `slide()`/`slide_v()`/`img_tag()`/`video_tag()`/`paginate_toc()` — markdown-assembly primitives for a deck's `slides.md`. |
 | `build_deck.py` | `build_slide_deck()` — write `slides.md`+`mkslides.yml`, run `mkslides build`, optionally bundle via `inline_html`. |
 | `include_in_config.txt` | Base `<img>` CSS rule (scale-to-fit, centered) — pass as `extra_css`/copy into the slides dir for decks that want image sizing beyond mkslides' defaults. |
 | `css/landscape_pair.css` | Extra CSS for laying out 2 images side-by-side per slide (`.landscape-pair` wrapper div) — use alongside `include_in_config.txt`, not instead of it. |
+| `js/fit_text.js` | Auto-shrinks a slide's font size on load until its content fits the configured canvas height, instead of overflowing past the bottom edge (reveal.js's `.slides section` has no fixed height and doesn't clip — `include_in_config.txt`'s `max-height` rule keeps a single image/video from overflowing, but a slide can still overflow overall if title+image+text together are too tall). Pass `"fit_text.js"` as `extra_javascript` to `build_mkslides_config()` and copy the file into the slides dir via `extra_files` (see `build_deck.build_slide_deck`'s `extra_files` param) — no per-slide authoring needed. |
 
 ## Referencing this repo from another project
 
@@ -152,6 +153,36 @@ build_slide_deck(
 
 Otherwise, `include_in_config.txt` alone (or mkslides' own default styling)
 is enough for single-image-per-slide decks.
+
+## Auto-fitting slides that overflow
+
+A slide with a lot of content (a title + a tall image + a few paragraphs of
+text, say) can render taller than the configured canvas height. reveal.js
+doesn't clip or scroll this — the excess just renders past where the
+fixed-position nav arrows/slide counter expect the slide to end, visually
+overlapping them. `include_in_config.txt`'s `max-height` rule bounds any
+*single* image/video, but doesn't help if the slide's *total* content is too
+tall. `js/fit_text.js` fixes this generically — no per-slide authoring:
+
+```python
+build_slide_deck(
+    slides_dir,
+    slides_md,
+    mkslides_yml=build_mkslides_config(
+        extra_css=["include_in_config.txt"],
+        extra_javascript=["fit_text.js"],
+    ),
+    extra_files={
+        "include_in_config.txt": Path("include_in_config.txt").read_text(),
+        "fit_text.js": Path("js/fit_text.js").read_text(),
+    },
+)
+```
+
+It runs on every slide automatically (`ready`/`slidechanged` events),
+shrinking that slide's font size in small steps until its content fits the
+configured height (or hits a floor, `MIN_SCALE = 0.6` in the script) —
+unaffected slides are left untouched.
 
 ## Out of scope (left in each project)
 
