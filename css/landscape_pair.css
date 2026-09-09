@@ -1,0 +1,26 @@
+/* Two-images-per-slide side-by-side layout (e.g. comparing two metrics'
+   fitted surfaces for the same dataset). Wrap the pair in
+   <div class="landscape-pair">...</div>.
+
+   More specific than the base `img` rule in ../include_in_config.txt, so it
+   overrides just enough (display, max-height, max-width) to lay the pair
+   out side by side within the slide's remaining height, instead of
+   stacking vertically and overflowing past the bottom edge (the base rule's
+   `display: block` stacks adjacent <img> tags).
+
+   Load both files together, e.g. via mkslides_config.build_mkslides_config(
+   extra_css=["include_in_config.txt", "landscape_pair.css"]) with both
+   copied into the slides source dir. */
+
+.landscape-pair {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2%;
+}
+.landscape-pair img {
+  display: inline-block;
+  max-width: 48%;
+  max-height: 78vh;
+  margin: 0;
+}
