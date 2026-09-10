@@ -184,6 +184,15 @@ shrinking that slide's font size in small steps until its content fits the
 configured height (or hits a floor, `MIN_SCALE = 0.6` in the script) —
 unaffected slides are left untouched.
 
+`fit_text.js` shrinks the section's own `font-size`, so it only shrinks
+things sized in `em`/`rem` along with it — a fixed-`px` image `max-height`
+(or one in `vh`, which has its own, separate bug — see `include_in_config.txt`'s
+comment) stays exactly its original size while the text around it shrinks,
+so an oversized image on a text-heavy slide won't actually get smaller.
+Use `include_in_config.txt`'s `em`-based image rule (not a project-local
+`px`/`vh` override) if a deck combines `fit_text.js` with images, so both
+respond to the same per-slide shrink.
+
 ## Out of scope (left in each project)
 
 Project-specific narrative/data-discovery logic — e.g. which datasets to
